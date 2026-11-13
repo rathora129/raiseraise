@@ -92,6 +92,9 @@ const Actions = styled.div`
   flex-wrap: wrap;
   gap: 12px;
   margin-top: 26px;
+
+  > a, > button { width: 100%; }
+  ${mq.sm} { > a, > button { width: auto; } }
 `;
 
 const Rail = styled.div`

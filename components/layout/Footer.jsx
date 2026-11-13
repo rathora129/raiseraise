@@ -156,7 +156,7 @@ const Up = styled.a`
 
 const Bottom = styled.div`
   margin-top: 32px;
-  padding: 22px 0 28px;
+  padding: 22px 78px 28px 0;
   border-top: 1px solid rgba(255, 255, 255, 0.08);
   display: grid;
   gap: 14px;

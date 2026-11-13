@@ -22,7 +22,7 @@ const base = css`
   white-space: nowrap;
   min-height: 52px;
 
-  & > span { display: inline-block; }
+  & > span { display: inline-flex; align-items: center; }
 
   ${mq.hover} {
     &:hover .btn-icon {
