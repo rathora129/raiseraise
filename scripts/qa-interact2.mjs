@@ -1,0 +1,22 @@
+import puppeteer from 'puppeteer-core';
+const CHROME='/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
+const sleep=(ms)=>new Promise(r=>setTimeout(r,ms));
+const browser=await puppeteer.launch({executablePath:CHROME,headless:'new',args:['--no-sandbox','--disable-gpu']});
+const page=await browser.newPage();
+await page.setViewport({width:1280,height:900});
+await page.evaluateOnNewDocument(()=>{try{sessionStorage.setItem('rr-visited','1');}catch{}});
+await page.goto('http://localhost:3000/',{waitUntil:'networkidle2'});
+await sleep(800);
+await page.evaluate(()=>{
+  const b=[...document.querySelectorAll('button[aria-expanded="false"]')].find(x=>/How do I get a quote/.test(x.textContent));
+  b?.click();
+});
+await sleep(500);
+console.log('faq answer visible', await page.evaluate(()=>document.body.innerText.includes('Send us the building type, number of floors')));
+const before=await page.$eval('ul[aria-label="Elevator product ranges"]', el=>({left:Math.round(el.scrollLeft), w:el.scrollWidth, c:el.clientWidth}));
+await page.click('button[aria-label="Next product"]');
+await sleep(900);
+const after=await page.$eval('ul[aria-label="Elevator product ranges"]', el=>({left:Math.round(el.scrollLeft)}));
+console.log('rail',before,after);
+console.log('prev disabled at start?', await page.$eval('button[aria-label="Previous product"]', b=>b.disabled));
+await browser.close();

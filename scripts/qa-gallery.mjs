@@ -1,0 +1,25 @@
+import puppeteer from 'puppeteer-core';
+const CHROME='/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
+const sleep=(ms)=>new Promise(r=>setTimeout(r,ms));
+const browser=await puppeteer.launch({executablePath:CHROME,headless:'new',args:['--no-sandbox','--disable-gpu','--hide-scrollbars']});
+const page=await browser.newPage();
+await page.setViewport({width:1280,height:900});
+await page.evaluateOnNewDocument(()=>{try{sessionStorage.setItem('rr-visited','1');}catch{}});
+await page.goto('http://localhost:3000/projects',{waitUntil:'networkidle2'});
+await sleep(900);
+const count = await page.$$eval('main button[aria-label^="Open "]', els=>els.length);
+console.log('items', count);
+await page.click('main button[aria-label^="Open "]');
+await sleep(700);
+await page.screenshot({path:'/tmp/rr-lightbox-desktop.png'});
+console.log('open', await page.evaluate(()=>!!document.querySelector('[role="dialog"][aria-modal="true"], [role="dialog"]')));
+await page.keyboard.press('ArrowRight');
+await sleep(500);
+await page.keyboard.press('Escape');
+await sleep(500);
+console.log('closed', await page.evaluate(()=>!document.querySelector('[role="dialog"]')));
+// filter
+await page.evaluate(()=>{ const b=Array.from(document.querySelectorAll('main [role="group"] button')).find(x=>/Cabins/.test(x.textContent)); b?.click(); });
+await sleep(700);
+console.log('after filter items', await page.$$eval('main button[aria-label^="Open "]', els=>els.length));
+await browser.close();

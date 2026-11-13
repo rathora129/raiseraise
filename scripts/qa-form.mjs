@@ -1,0 +1,18 @@
+import puppeteer from 'puppeteer-core';
+const CHROME='/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
+const sleep=(ms)=>new Promise(r=>setTimeout(r,ms));
+const browser=await puppeteer.launch({executablePath:CHROME,headless:'new',args:['--no-sandbox','--disable-gpu','--hide-scrollbars']});
+const page=await browser.newPage();
+await page.setViewport({width:1280,height:900});
+await page.evaluateOnNewDocument(()=>{try{sessionStorage.setItem('rr-visited','1');}catch{}; window.__opened=[]; window.open=(u)=>{window.__opened.push(u);return null;};});
+await page.goto('http://localhost:3000/contact',{waitUntil:'networkidle2'});
+await sleep(900);
+await page.type('input[name="name"]','QA Test');
+await page.type('input[name="phone"]','9999999999');
+await page.type('input[name="city"]','Pune');
+await page.type('textarea[name="message"]','Need a home lift for a duplex.');
+await page.click('form button[type="submit"]');
+await sleep(500);
+const out = await page.evaluate(()=>({opened:window.__opened,status:document.body.innerText.includes('WhatsApp has opened')}));
+console.log(JSON.stringify(out,null,1));
+await browser.close();
