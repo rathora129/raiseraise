@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import styled from 'styled-components';
 import {
   ArrowRight,
@@ -195,6 +195,8 @@ const Field = styled.label`
     }
 
     &::placeholder { color: rgba(92, 107, 100, 0.55); }
+
+    &[aria-invalid='true'] { border-color: #A8432F; }
   }
 
   textarea {
@@ -204,6 +206,16 @@ const Field = styled.label`
   }
 
   select { cursor: pointer; }
+`;
+
+const ErrorText = styled.span`
+  && {
+    font-size: 10.5px;
+    letter-spacing: 0.01em;
+    text-transform: none;
+    line-height: 1.5;
+    color: #A8432F;
+  }
 `;
 
 const SubmitRow = styled.div`
@@ -274,38 +286,143 @@ const PROJECT_TYPES = [
   'Something else',
 ];
 
+const SERVICE_OPTIONS = [
+  'New Elevator Installation',
+  'Home Elevator Installation',
+  'Passenger Elevator Installation',
+  'Hospital / Stretcher Elevator',
+  'Goods / Freight Elevator',
+  'Commercial Elevator Project',
+  'Elevator Maintenance (AMC)',
+  'Elevator Repair / Breakdown',
+  'Elevator Modernization / Upgrade',
+  'Elevator Cabin Decoration / Interior',
+  'Elevator Safety Inspection',
+  'Elevator Consultation',
+  'Other Requirements',
+];
+
+const CONFIRMATION =
+  'Your enquiry is ready! Please send the pre-filled WhatsApp message to complete your submission.';
+
+const validate = (values) => {
+  const errors = {};
+
+  if (!values.name) errors.name = 'Please enter your name.';
+
+  const digits = values.phone.replace(/\D/g, '');
+  if (!values.phone) errors.phone = 'Please enter your mobile number.';
+  else if (digits.length < 10 || digits.length > 15) {
+    errors.phone = 'Enter a valid mobile number (10–15 digits).';
+  }
+
+  if (values.email && !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(values.email)) {
+    errors.email = 'Enter a valid email address.';
+  }
+
+  if (!values.city) errors.city = 'Please enter your city or location.';
+  if (!values.type) errors.type = 'Please select your elevator requirement.';
+  if (!values.building) errors.building = 'Please tell us the building type.';
+
+  if (
+    values.floors &&
+    (!/^[0-9gbs+\s,\-/]{1,24}$/i.test(values.floors) || !/\d/.test(values.floors))
+  ) {
+    errors.floors = 'Use a floor count such as 10, G + 4 or B + G + 3.';
+  }
+
+  if (!values.service) errors.service = 'Please select what you need help with.';
+
+  return errors;
+};
+
+const buildMessage = (values) => {
+  const blocks = [
+    ['NEW WEBSITE ENQUIRY – RAISERAISE ELEVATORS'],
+    [
+      'Customer Details:',
+      `Name: ${values.name}`,
+      `Phone: ${values.phone}`,
+      values.email ? `Email: ${values.email}` : null,
+      `Location: ${values.city}`,
+    ],
+    [
+      'Project Requirements:',
+      `Elevator Requirement: ${values.type}`,
+      `Building Type: ${values.building}`,
+      values.floors ? `Number of Floors: ${values.floors}` : null,
+      `Selected Service: ${values.service}`,
+    ],
+    values.details ? ['Additional Project Details:', values.details] : null,
+    ['Source: RaiseRaise Elevators Website'],
+  ];
+
+  return blocks
+    .filter(Boolean)
+    .map((block) => block.filter(Boolean).join('\n'))
+    .join('\n\n');
+};
+
 export default function ContactPage() {
   const [status, setStatus] = useState('');
+  const [errors, setErrors] = useState({});
+  const [sending, setSending] = useState(false);
+  const submitLock = useRef(false);
+
+  const clearFieldError = (event) => {
+    const { name } = event.target;
+    if (!name || !errors[name]) return;
+    setErrors((prev) => ({ ...prev, [name]: '' }));
+  };
 
   const onSubmit = (event) => {
     event.preventDefault();
+    if (submitLock.current) return;
+
     const form = event.currentTarget;
     const data = new FormData(form);
-    const name = String(data.get('name') || '').trim();
-    const phone = String(data.get('phone') || '').trim();
-    const email = String(data.get('email') || '').trim();
-    const city = String(data.get('city') || '').trim();
-    const type = String(data.get('type') || '').trim();
-    const floors = String(data.get('floors') || '').trim();
-    const message = String(data.get('message') || '').trim();
+    const values = {
+      name: String(data.get('name') || '').trim(),
+      phone: String(data.get('phone') || '').trim(),
+      email: String(data.get('email') || '').trim(),
+      city: String(data.get('city') || '').trim(),
+      type: String(data.get('type') || '').trim(),
+      building: String(data.get('building') || '').trim(),
+      floors: String(data.get('floors') || '').trim(),
+      service: String(data.get('service') || '').trim(),
+      details: String(data.get('details') || '').trim(),
+    };
 
-    const lines = [
-      'Hello RaiseRaise Elevators, I would like to discuss a project.',
-      '',
-      `Name: ${name}`,
-      `Phone: ${phone}`,
-      email ? `Email: ${email}` : null,
-      city ? `Location: ${city}` : null,
-      type ? `Requirement: ${type}` : null,
-      floors ? `Floors: ${floors}` : null,
-      '',
-      message,
-    ].filter((line) => line !== null);
+    const nextErrors = validate(values);
+    setErrors(nextErrors);
+    setStatus('');
 
-    window.open(whatsappLink(lines.join('\n')), '_blank', 'noopener,noreferrer');
-    setStatus(
-      'WhatsApp has opened with your details. If it did not open, use the WhatsApp button above and we will pick it up there.'
-    );
+    const firstError = Object.keys(nextErrors)[0];
+    if (firstError) {
+      const field = form.elements.namedItem(firstError);
+      if (field && typeof field.focus === 'function') field.focus();
+      return;
+    }
+
+    submitLock.current = true;
+    setSending(true);
+
+    const url = whatsappLink(buildMessage(values));
+    let launched = false;
+
+    const launch = () => {
+      if (launched) return;
+      launched = true;
+      window.open(url, '_blank', 'noopener,noreferrer');
+      setSending(false);
+      setStatus(CONFIRMATION);
+      submitLock.current = false;
+    };
+
+    // Two frames let the preparing state paint; the timer keeps the open
+    // working when frames are paused (e.g. a background tab).
+    requestAnimationFrame(() => requestAnimationFrame(launch));
+    window.setTimeout(launch, 250);
   };
 
   return (
@@ -411,17 +528,26 @@ export default function ContactPage() {
                   as="h2"
                 />
 
-                <Form onSubmit={onSubmit} style={{ marginTop: 26 }}>
+                <Form onSubmit={onSubmit} onInput={clearFieldError} noValidate style={{ marginTop: 26 }}>
                   <FormGrid>
                     <Field>
                       <span>
                         Name <em>*</em>
                       </span>
-                      <input name="name" type="text" required autoComplete="name" placeholder="Your name" />
+                      <input
+                        name="name"
+                        type="text"
+                        required
+                        autoComplete="name"
+                        placeholder="Your name"
+                        aria-invalid={errors.name ? 'true' : undefined}
+                        aria-describedby={errors.name ? 'error-name' : undefined}
+                      />
+                      {errors.name && <ErrorText id="error-name">{errors.name}</ErrorText>}
                     </Field>
                     <Field>
                       <span>
-                        Phone <em>*</em>
+                        Mobile number <em>*</em>
                       </span>
                       <input
                         name="phone"
@@ -430,19 +556,48 @@ export default function ContactPage() {
                         autoComplete="tel"
                         placeholder="+91"
                         inputMode="tel"
+                        aria-invalid={errors.phone ? 'true' : undefined}
+                        aria-describedby={errors.phone ? 'error-phone' : undefined}
                       />
+                      {errors.phone && <ErrorText id="error-phone">{errors.phone}</ErrorText>}
                     </Field>
                     <Field>
                       <span>Email</span>
-                      <input name="email" type="email" autoComplete="email" placeholder="Optional" />
+                      <input
+                        name="email"
+                        type="email"
+                        autoComplete="email"
+                        placeholder="Optional"
+                        aria-invalid={errors.email ? 'true' : undefined}
+                        aria-describedby={errors.email ? 'error-email' : undefined}
+                      />
+                      {errors.email && <ErrorText id="error-email">{errors.email}</ErrorText>}
                     </Field>
                     <Field>
-                      <span>City / location</span>
-                      <input name="city" type="text" placeholder="Where is the building?" />
+                      <span>
+                        City / location <em>*</em>
+                      </span>
+                      <input
+                        name="city"
+                        type="text"
+                        required
+                        placeholder="Where is the building?"
+                        aria-invalid={errors.city ? 'true' : undefined}
+                        aria-describedby={errors.city ? 'error-city' : undefined}
+                      />
+                      {errors.city && <ErrorText id="error-city">{errors.city}</ErrorText>}
                     </Field>
                     <Field>
-                      <span>Requirement</span>
-                      <select name="type" defaultValue="">
+                      <span>
+                        Elevator requirement <em>*</em>
+                      </span>
+                      <select
+                        name="type"
+                        required
+                        defaultValue=""
+                        aria-invalid={errors.type ? 'true' : undefined}
+                        aria-describedby={errors.type ? 'error-type' : undefined}
+                      >
                         <option value="" disabled>
                           Select a requirement
                         </option>
@@ -452,21 +607,65 @@ export default function ContactPage() {
                           </option>
                         ))}
                       </select>
+                      {errors.type && <ErrorText id="error-type">{errors.type}</ErrorText>}
+                    </Field>
+                    <Field>
+                      <span>
+                        Building type <em>*</em>
+                      </span>
+                      <input
+                        name="building"
+                        type="text"
+                        required
+                        placeholder="e.g. apartment, villa, office, hospital"
+                        aria-invalid={errors.building ? 'true' : undefined}
+                        aria-describedby={errors.building ? 'error-building' : undefined}
+                      />
+                      {errors.building && (
+                        <ErrorText id="error-building">{errors.building}</ErrorText>
+                      )}
                     </Field>
                     <Field>
                       <span>Number of floors</span>
-                      <input name="floors" type="text" placeholder="e.g. G + 4" />
+                      <input
+                        name="floors"
+                        type="text"
+                        placeholder="e.g. G + 4"
+                        aria-invalid={errors.floors ? 'true' : undefined}
+                        aria-describedby={errors.floors ? 'error-floors' : undefined}
+                      />
+                      {errors.floors && <ErrorText id="error-floors">{errors.floors}</ErrorText>}
                     </Field>
                   </FormGrid>
 
                   <Field>
                     <span>
-                      Project notes <em>*</em>
+                      What do you need help with? <em>*</em>
                     </span>
-                    <textarea
-                      name="message"
+                    <select
+                      name="service"
                       required
-                      placeholder="Building type, intended use, available shaft or drawings, and anything that has already been decided."
+                      defaultValue=""
+                      aria-invalid={errors.service ? 'true' : undefined}
+                      aria-describedby={errors.service ? 'error-service' : undefined}
+                    >
+                      <option value="" disabled>
+                        Select a service
+                      </option>
+                      {SERVICE_OPTIONS.map((service) => (
+                        <option key={service} value={service}>
+                          {service}
+                        </option>
+                      ))}
+                    </select>
+                    {errors.service && <ErrorText id="error-service">{errors.service}</ErrorText>}
+                  </Field>
+
+                  <Field>
+                    <span>Additional project details</span>
+                    <textarea
+                      name="details"
+                      placeholder="Tell us more about your project, building requirements or specific needs..."
                     />
                   </Field>
 
@@ -476,13 +675,17 @@ export default function ContactPage() {
                       By sending, you agree to be contacted about this enquiry. No data is
                       saved on this site.
                     </Privacy>
-                    <Button type="submit" variant="ink">
+                    <Button type="submit" variant="ink" disabled={sending}>
                       <Send size={13} style={{ marginRight: 8, verticalAlign: -2 }} />
-                      Send on WhatsApp
+                      {sending ? 'Preparing…' : 'Send on WhatsApp'}
                     </Button>
                   </SubmitRow>
 
-                  {status && <Status role="status">{status}</Status>}
+                  {status && (
+                    <Status role="status" aria-live="polite">
+                      {status}
+                    </Status>
+                  )}
                 </Form>
               </FormWrap>
             </Reveal>

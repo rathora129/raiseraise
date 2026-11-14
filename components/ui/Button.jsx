@@ -24,6 +24,11 @@ const base = css`
 
   & > span { display: inline-flex; align-items: center; }
 
+  &:disabled {
+    opacity: 0.65;
+    cursor: progress;
+  }
+
   ${mq.hover} {
     &:hover .btn-icon {
       background: currentColor;
@@ -132,6 +137,7 @@ export default function Button({
   onClick,
   type,
   ariaLabel,
+  disabled,
 }) {
   const content = (
     <>
@@ -167,6 +173,7 @@ export default function Button({
       onClick={onClick}
       type={type || 'button'}
       aria-label={ariaLabel}
+      disabled={disabled}
     >
       {content}
     </StyledButton>
