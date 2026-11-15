@@ -42,18 +42,18 @@ assets/fonts/            Manrope variable font source
 scripts/                 logo/OG generators and headless QA utilities
 ```
 
-## Contact details are intentionally incomplete
+## Contact details live in one place
 
 `lib/site.js` is the single source of truth for phone, WhatsApp, email and
-address. Only the client-confirmed WhatsApp/call number is populated:
+address:
 
 - WhatsApp / phone: `+91 78274 33486`
-- email, address, opening hours, map URL: **null until the client confirms them**
+- Email: `raiseraiseelevators@gmail.com`
+- Office: A-148, G/F, KH. No. 17/2, Ambedkar Colony, Chhatarpur, New Delhi 110074
+- Opening hours: **null until the client confirms them**
 
-Anything null is hidden or shown as a clearly marked "pending" state — never
-invented. To go live with the full contact block, fill in the null fields in
-`lib/site.js` and add the corresponding UI fields in `components/pages/ContactPage.jsx`
-and `components/layout/Footer.jsx`.
+The Google Maps links are generated from the confirmed address. Anything null is
+hidden or shown as a clearly marked "pending" state — never invented.
 
 Similarly, `content.js` must only list offerings the client actually provides.
 Do not add certifications, awards, customer testimonials, client names or

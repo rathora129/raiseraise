@@ -222,7 +222,10 @@ export default function Footer() {
                 </Pending>
               )}
               {site.address ? (
-                <ContactLink href={site.mapsUrl || '/contact'}>
+                <ContactLink
+                  href={site.mapsUrl || '/contact'}
+                  {...(site.mapsUrl ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
+                >
                   <MapPin size={15} strokeWidth={1.6} />
                   {site.address}
                 </ContactLink>

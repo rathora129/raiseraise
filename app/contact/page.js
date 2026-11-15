@@ -29,6 +29,15 @@ export default function Page() {
               '@id': `${site.url}/#organization`,
               name: site.legalName,
               telephone: site.phoneDisplay,
+              email: site.email,
+              address: {
+                '@type': 'PostalAddress',
+                streetAddress: site.streetAddress,
+                addressLocality: site.locality,
+                addressRegion: site.region,
+                postalCode: site.postalCode,
+                addressCountry: site.country,
+              },
               contactPoint: {
                 '@type': 'ContactPoint',
                 telephone: site.phoneDisplay,

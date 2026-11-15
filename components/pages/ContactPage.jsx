@@ -145,6 +145,31 @@ const MapInner = styled.div`
   }
 `;
 
+const MapAddress = styled.p`
+  && {
+    font-size: 12px;
+    color: rgba(244, 246, 242, 0.82);
+  }
+`;
+
+const MapLink = styled.a`
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding-bottom: 3px;
+  border-bottom: 1px solid rgba(244, 246, 242, 0.3);
+  font-size: 9px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: ${colors.turquoise};
+  transition: color 0.25s ease, border-color 0.25s ease;
+
+  &:hover {
+    color: ${colors.turquoiseSoft};
+    border-color: ${colors.turquoiseSoft};
+  }
+`;
+
 const FormWrap = styled.div`
   background: ${colors.porcelainDeep};
   border: 1px solid rgba(14, 28, 24, 0.1);
@@ -437,7 +462,7 @@ export default function ContactPage() {
         meta={[
           { label: 'WhatsApp', value: site.whatsappDisplay },
           { label: 'Call', value: site.phoneDisplay },
-          { label: 'Email & office', value: 'Awaiting confirmation' },
+          { label: 'Email', value: site.email },
         ]}
         breadcrumbs={[{ name: 'Contact', href: '/contact' }]}
       >
@@ -479,23 +504,26 @@ export default function ContactPage() {
                   </Row>
                 )}
 
-                <StaticRow $pending>
+                <Row href={`mailto:${site.email}`}>
                   <Mail size={18} strokeWidth={1.6} />
                   <span>
                     <Label>Email</Label>
-                    <Pending>To be confirmed</Pending>
+                    <Value>{site.email}</Value>
                   </span>
-                  <span />
-                </StaticRow>
+                  <ArrowRight size={15} aria-hidden="true" />
+                </Row>
 
-                <StaticRow $pending>
+                <Row
+                  href={site.mapsUrl || '/contact'}
+                  {...(site.mapsUrl ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
+                >
                   <MapPin size={18} strokeWidth={1.6} />
                   <span>
                     <Label>Office</Label>
-                    <Pending>Address to be confirmed</Pending>
+                    <Value>{site.address}</Value>
                   </span>
-                  <span />
-                </StaticRow>
+                  <ArrowRight size={15} aria-hidden="true" />
+                </Row>
 
                 <StaticRow $pending>
                   <Clock size={18} strokeWidth={1.6} />
@@ -510,11 +538,14 @@ export default function ContactPage() {
               <MapCard>
                 <MapInner>
                   <MapPin size={26} strokeWidth={1.4} />
-                  <span>Google Maps</span>
-                  <p>
-                    The map will be pinned here once the office address is confirmed. We do
-                    not publish an unverified location.
-                  </p>
+                  <span>Visit us</span>
+                  <MapAddress>{site.address}</MapAddress>
+                  {site.mapsUrl && (
+                    <MapLink href={site.mapsUrl} target="_blank" rel="noopener noreferrer">
+                      Open in Google Maps
+                      <ArrowRight size={13} aria-hidden="true" />
+                    </MapLink>
+                  )}
                 </MapInner>
               </MapCard>
             </Side>
